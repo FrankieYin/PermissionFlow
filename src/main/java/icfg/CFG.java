@@ -1,13 +1,13 @@
+package icfg;
+
 import org.xmlpull.v1.XmlPullParserException;
-import soot.*;
+import soot.Scene;
+import soot.SootMethod;
+import soot.Unit;
 import soot.jimple.InvokeExpr;
 import soot.jimple.Stmt;
 import soot.jimple.infoflow.android.SetupApplication;
 import soot.jimple.infoflow.solver.cfg.InfoflowCFG;
-import soot.jimple.internal.InvokeExprBox;
-import soot.jimple.internal.JAssignStmt;
-import soot.jimple.internal.JIfStmt;
-import soot.jimple.internal.JInvokeStmt;
 import soot.jimple.toolkits.callgraph.Edge;
 import soot.toolkits.graph.DirectedGraph;
 
@@ -43,7 +43,7 @@ public class CFG {
                 for (Unit u : ug) {
                     if (((Stmt) u).containsInvokeExpr()) {
                         InvokeExpr expr = ((Stmt) u).getInvokeExpr();
-                        System.out.println(expr);
+                        System.out.println(expr.getMethod().getSignature());
                     }
                 }
                 firstime = false;
