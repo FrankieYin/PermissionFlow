@@ -1,6 +1,7 @@
 package icfg;
 
 import org.xmlpull.v1.XmlPullParserException;
+import pscoutData.PscoutParser;
 import soot.Scene;
 import soot.SootMethod;
 import soot.Unit;
@@ -13,6 +14,7 @@ import soot.toolkits.graph.DirectedGraph;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * Copyright (c) 2018, Zhijun Yin. All rights reserved.
@@ -43,7 +45,8 @@ public class CFG {
                 for (Unit u : ug) {
                     if (((Stmt) u).containsInvokeExpr()) {
                         InvokeExpr expr = ((Stmt) u).getInvokeExpr();
-                        System.out.println(expr.getMethod().getSignature());
+                        String signature = expr.getMethod().getSignature();
+                        List<String> permissions = PscoutParser.getPermissionMapping(signature);
                     }
                 }
                 firstime = false;
