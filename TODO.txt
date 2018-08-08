@@ -1,7 +1,14 @@
-任务：
 - 分析一个method，将每个api call与与之对应的permission提取出来
-  · 目前的icfg每一个node是soot的unit，是bytecode的形式
-  · callgraph记录了caller、callee以及caller的calling unit三个信息
-  · PScout的database记录的是每个android内建的（documented或者undocumented）api call对应的permission
-  · [25/07]: can extract all invoke expression from Jimple code
-  · now we need to extract the signiture of an api call, and compare it to the database of Pscout to extract which permissions it needs
+- 目前的icfg每一个node是soot的unit，是bytecode的形式
+- callgraph记录了caller、callee以及caller的calling unit三个信息
+- PScout的database记录的是每个android内建的（documented或者undocumented）api call对应的permission
+- [25/07]: can extract all invoke expression from Jimple code
+- now we need to extract the signiture of an api call, and compare it to the database of Pscout to extract which permissions it needs
+- [30/07]: parsed pscout's data, now able to get the permission mapping using an api's signature
+- In a call graph, a method node's permission is the union of all the api permission used in method body.
+- we can analyze the permission flow/use on two levels. First, on the inter-procedural call level and second on the intra-procedural call (icfg) level.
+- [31/07/Task 1]: Read the permission paper.
+- [31/07/Task 2]: analyse and get the dangerous permissions an app is holding at each point of the control flow.
+- [31/07/Task 3]: run the current program on real applications
+- Try to write the java version of Tarjan's algorithm first, using a simple test graph. If that works, port the code to using the complicated call graph
+
