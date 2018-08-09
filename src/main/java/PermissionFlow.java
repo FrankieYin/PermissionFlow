@@ -31,7 +31,7 @@ public class PermissionFlow {
         callGraphInitialsed = false;
     }
 
-    private void initCallGraph(String apkName) {
+    public void initCallGraph(String apkName) {
         String apkFileLocation = "/Users/frankie/Downloads/SummerResearch/apks/" + apkName;
         SetupApplication analyzer = new SetupApplication(androidJar, apkFileLocation);
 
@@ -54,20 +54,20 @@ public class PermissionFlow {
             SootMethod tgt = edge.tgt();
 //            System.out.println("Calling from " + src + " to " + tgt);
             if (src.getName().compareTo("method1") == 0 && m1) {
-                analyzeNode(src);
-//                method1 = src;
+//                analyzeNode(src);
+                method1 = src;
                 m1 = false;
             }
 
             if (src.getName().compareTo("method2") == 0 && m2) {
-                analyzeNode(src);
-//                method2 = src;
+//                analyzeNode(src);
+                method2 = src;
                 m2 = false;
             }
         }
 
-//        Iterator<Unit> ug1 = infoflowCFG.getOrCreateUnitGraph(method1).iterator();
-//        Iterator<Unit> ug2 = infoflowCFG.getOrCreateUnitGraph(method2).iterator();
+        Iterator<Unit> ug1 = infoflowCFG.getOrCreateUnitGraph(method1).iterator();
+        Iterator<Unit> ug2 = infoflowCFG.getOrCreateUnitGraph(method2).iterator();
 //        while (ug1.hasNext() && ug2.hasNext()) {
 //            Unit u = ug1.next();
 //            Unit v = ug2.next();

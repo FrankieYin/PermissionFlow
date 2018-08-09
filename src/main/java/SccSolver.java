@@ -36,9 +36,12 @@ public class SccSolver {
     private InfoflowCFG infoflowCFG;
     private DirectedGraph<Unit> unitDirectedGraph;
 
-    private HashMap<Unit, NodeProperty> nodes;
+    private Map<Unit, NodeProperty> nodes;
     private Deque<Unit> stack;
     private int sccCount, id;
+
+    private PermissionFlowGraph graph;
+    private Map<Unit, List<Long>> tempEdge;
 
     public SccSolver() {
         infoflowCFG = new InfoflowCFG();
@@ -46,18 +49,28 @@ public class SccSolver {
         nodes = new HashMap<>();
         stack = new ArrayDeque<>();
         sccCount = id = 0;
+        graph = new PermissionFlowGraph();
+        tempEdge = new HashMap<>();
     }
 
-    public void partitionCallGraph() {
+    public PermissionFlowGraph partitionCallGraph() {
         Iterator<MethodOrMethodContext> sourceIter = callGraph.sourceMethods();
+        List<SootMethod> entrys = new ArrayList<>();
         while (sourceIter.hasNext()) {
             SootMethod method = sourceIter.next().method();
+            if (callGraph.isEntryMethod(method)) {
+                entrys.add(method);
+            }
+        }
+
+        for (SootMethod method : entrys) {
             unitDirectedGraph = infoflowCFG.getOrCreateUnitGraph(method);
             for (Unit u : unitDirectedGraph)
                 if (nodes.getOrDefault(u, new NodeProperty()).id == NodeProperty.UNVISITED)
                     dfs(u);
-
         }
+
+        return graph;
     }
 
     private void dfs(Unit u) {
@@ -68,17 +81,32 @@ public class SccSolver {
         for (Unit v : getSuccs(u)) {
             if (nodes.getOrDefault(v, new NodeProperty()).id == NodeProperty.UNVISITED)
                 dfs(v);
-            if (nodes.get(v).onStack)
+            if (nodes.get(v).onStack) {
                 nodes.get(u).low = Math.min(nodes.get(v).low, nodes.get(u).low);
+            } else {
+                long nodeId = graph.findNodeByComponent(v);
+                if (!tempEdge.containsKey(u)) {
+                    tempEdge.put(u, new ArrayList<>());
+                }
+                tempEdge.get(u).add(nodeId);
+            }
         }
 
         if (nodes.get(u).id == nodes.get(u).low) {
+            // new scc component, construct a node to contain it
+            FlowGraphNode graphNode = new FlowGraphNode();
             for (Unit node = stack.pop(); ; node = stack.pop()) {
                 nodes.get(node).low = nodes.get(u).id;
                 nodes.get(node).onStack = false;
+                graphNode.addComponent(node);
+                for (long to : tempEdge.getOrDefault(node, new ArrayList<>())) {
+                    graph.addEdge(graphNode.getId(), to);
+                }
                 if (node == u) break;
             }
+            graph.addNode(graphNode);
             sccCount++;
+            tempEdge.clear();
         }
     }
 
@@ -90,5 +118,12 @@ public class SccSolver {
             }
         }
         return succs;
+    }
+
+    public static void main(String[] args) {
+        PermissionFlow analyzer = new PermissionFlow();
+        analyzer.initCallGraph("app.apk");
+        SccSolver solver = new SccSolver();
+        PermissionFlowGraph graph = solver.partitionCallGraph();
     }
 }
