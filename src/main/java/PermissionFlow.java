@@ -13,6 +13,8 @@ import soot.jimple.toolkits.callgraph.CallGraph;
 import soot.jimple.toolkits.callgraph.Edge;
 import soot.toolkits.graph.DirectedGraph;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 
@@ -49,25 +51,30 @@ public class PermissionFlow {
         boolean m2 = true;
         SootMethod method1 = null;
         SootMethod method2 = null;
+        List<SootMethod> seen = new ArrayList<>();
         for (Edge edge : callGraph) {
             SootMethod src = edge.src();
             SootMethod tgt = edge.tgt();
+            if (!seen.contains(src)) seen.add(src);
+            if (!seen.contains(tgt)) seen.add(tgt);
 //            System.out.println("Calling from " + src + " to " + tgt);
-            if (src.getName().compareTo("method1") == 0 && m1) {
-//                analyzeNode(src);
-                method1 = src;
-                m1 = false;
-            }
-
-            if (src.getName().compareTo("method2") == 0 && m2) {
-//                analyzeNode(src);
-                method2 = src;
-                m2 = false;
-            }
-        }
-
-        Iterator<Unit> ug1 = infoflowCFG.getOrCreateUnitGraph(method1).iterator();
-        Iterator<Unit> ug2 = infoflowCFG.getOrCreateUnitGraph(method2).iterator();
+//            analyzeNode(src);
+//            analyzeNode(tgt);
+//            if (src.getName().compareTo("method1") == 0 && m1) {
+////                analyzeNode(src);
+//                method1 = src;
+//                m1 = false;
+//            }
+//
+//            if (src.getName().compareTo("method2") == 0 && m2) {
+////                analyzeNode(src);
+//                method2 = src;
+//                m2 = false;
+//            }
+//        }
+//
+//        Iterator<Unit> ug1 = infoflowCFG.getOrCreateUnitGraph(method1).iterator();
+//        Iterator<Unit> ug2 = infoflowCFG.getOrCreateUnitGraph(method2).iterator();
 //        while (ug1.hasNext() && ug2.hasNext()) {
 //            Unit u = ug1.next();
 //            Unit v = ug2.next();
@@ -82,7 +89,10 @@ public class PermissionFlow {
 //                String signature = expr.getMethod().getSignature();
 //                List<String> permissions = PscoutParser.getPermissionMapping(signature);
 //            }
-//        }
+        }
+        for (SootMethod m : seen) {
+            analyzeNode(m);
+        }
     }
 
     public void analyzeNode(SootMethod node) {
@@ -106,32 +116,30 @@ public class PermissionFlow {
 
         if (unitDirectedGraph == null) return;
 
-        System.out.println(node);
+        StringBuilder builder = new StringBuilder();
+        builder.append(String.format("%s\n", node));
         for (Unit u : unitDirectedGraph) {
-            System.out.println(u);
-            if (((Stmt) u).containsInvokeExpr()) {
-                System.out.println("has callee");
-                Collection<SootMethod> callees = infoflowCFG.getCalleesOfCallAt(u);
-                System.out.println(callees.isEmpty());
-                for (SootMethod callee : callees) {
-                    System.out.println(callee);
-                }
-            }
+            builder.append(String.format("%s\n", u));
+//            if (((Stmt) u).containsInvokeExpr()) {
+//                System.out.println("has callee");
+//                Collection<SootMethod> callees = infoflowCFG.getCalleesOfCallAt(u);
+//                for (SootMethod callee : callees) {
+//                    System.out.println(callee);
+//                }
+//            }
         }
-        System.out.println();
+        builder.append(String.format("\n"));
+
+        try {
+            BufferedWriter writer = new BufferedWriter(new FileWriter(System.getProperty("user.dir")
+                    + "/methodBytecode", true));
+            writer.write(builder.toString());
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         // traverse the heads until the method has been exhausted
-    }
-
-    /**
-     * Use Tarjan's strongly connected components algorithm to partition the call graph
-     * into a condensed directed acyclic graph, each node of which is a {@link FlowGraphNode}
-     * with permission information annotated.
-     *
-     * @return
-     */
-    public DirectedGraph<FlowGraphNode> partitionCallGraph() {
-        return null;
     }
 
     public static void main(String[] args) {

@@ -35,25 +35,26 @@ public class SccSolver {
     private CallGraph callGraph;
     private InfoflowCFG infoflowCFG;
     private DirectedGraph<Unit> unitDirectedGraph;
+    private SootMethod currentMethod;
 
     private Map<Unit, NodeProperty> nodes;
     private Deque<Unit> stack;
-    private int sccCount, id;
+    private int id;
 
     private PermissionFlowGraph graph;
-    private Map<Unit, List<Long>> tempEdge;
+    private Map<Unit, List<Long>> sccEdge;
 
     public SccSolver() {
         infoflowCFG = new InfoflowCFG();
         callGraph = Scene.v().getCallGraph();
         nodes = new HashMap<>();
         stack = new ArrayDeque<>();
-        sccCount = id = 0;
+        id = 0;
         graph = new PermissionFlowGraph();
-        tempEdge = new HashMap<>();
+        sccEdge = new HashMap<>();
     }
 
-    public PermissionFlowGraph partitionCallGraph() {
+    public PermissionFlowGraph getSCCGraph() {
         Iterator<MethodOrMethodContext> sourceIter = callGraph.sourceMethods();
         List<SootMethod> entrys = new ArrayList<>();
         while (sourceIter.hasNext()) {
@@ -64,7 +65,8 @@ public class SccSolver {
         }
 
         for (SootMethod method : entrys) {
-            unitDirectedGraph = infoflowCFG.getOrCreateUnitGraph(method);
+            currentMethod = method;
+            unitDirectedGraph = infoflowCFG.getOrCreateUnitGraph(currentMethod);
             for (Unit u : unitDirectedGraph)
                 if (nodes.getOrDefault(u, new NodeProperty()).id == NodeProperty.UNVISITED)
                     dfs(u);
@@ -85,10 +87,12 @@ public class SccSolver {
                 nodes.get(u).low = Math.min(nodes.get(v).low, nodes.get(u).low);
             } else {
                 long nodeId = graph.findNodeByComponent(v);
-                if (!tempEdge.containsKey(u)) {
-                    tempEdge.put(u, new ArrayList<>());
+                if (!sccEdge.containsKey(u)) {
+                    sccEdge.put(u, new ArrayList<>());
                 }
-                tempEdge.get(u).add(nodeId);
+                if (!sccEdge.get(u).contains(nodeId)) {
+                    sccEdge.get(u).add(nodeId);
+                }
             }
         }
 
@@ -99,18 +103,21 @@ public class SccSolver {
                 nodes.get(node).low = nodes.get(u).id;
                 nodes.get(node).onStack = false;
                 graphNode.addComponent(node);
-                for (long to : tempEdge.getOrDefault(node, new ArrayList<>())) {
+                for (long to : sccEdge.getOrDefault(node, new ArrayList<>())) {
                     graph.addEdge(graphNode.getId(), to);
                 }
                 if (node == u) break;
             }
             graph.addNode(graphNode);
-            sccCount++;
-            tempEdge.clear();
         }
     }
 
     private List<Unit> getSuccs(Unit u) {
+        SootMethod method = infoflowCFG.getMethodOf(u);
+        if (method != currentMethod) {
+            currentMethod = method;
+            unitDirectedGraph = infoflowCFG.getOrCreateUnitGraph(currentMethod);
+        }
         List<Unit> succs = unitDirectedGraph.getSuccsOf(u);
         if (((Stmt) u).containsInvokeExpr()) {
             for (SootMethod callee : infoflowCFG.getCalleesOfCallAt(u)) {
@@ -124,6 +131,7 @@ public class SccSolver {
         PermissionFlow analyzer = new PermissionFlow();
         analyzer.initCallGraph("app.apk");
         SccSolver solver = new SccSolver();
-        PermissionFlowGraph graph = solver.partitionCallGraph();
+        PermissionFlowGraph graph = solver.getSCCGraph();
+        graph.printGraph(solver.infoflowCFG);
     }
 }

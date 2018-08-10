@@ -15,9 +15,9 @@ public class PscoutParser {
     private static String jsonFileName = System.getProperty("user.dir") +
             "/pscout_results/permissionMappings.json";
 
-    private static HashMap<String, List<String>> permissionMappings = getOrCreatePermissionMappings();
+    private static Map<String, List<Permission>> permissionMappings = getOrCreatePermissionMappings();
 
-    private static HashMap<String, List<String>> getOrCreatePermissionMappings() {
+    private static Map<String, List<Permission>> getOrCreatePermissionMappings() {
         BufferedReader in;
         try {
             // read the .json file and load the hashmap
@@ -30,7 +30,7 @@ public class PscoutParser {
         }
         // read the json string and reconstruct a hashmap from json using gson
         Gson gson = new Gson();
-        Type type = new TypeToken<HashMap<String, List<String>>>(){}.getType();
+        Type type = new TypeToken<HashMap<String, List<Permission>>>(){}.getType();
         try {
             String jsonString = in.readLine();
             return gson.fromJson(jsonString, type);
@@ -46,9 +46,9 @@ public class PscoutParser {
      *
      * @return
      */
-    private static HashMap<String,List<String>> createPermissionMappings() {
+    private static Map<String,List<Permission>> createPermissionMappings() {
 
-        HashMap<String, List<String>> mappings = new HashMap<>();
+        Map<String, List<Permission>> mappings = new HashMap<>();
 
         String pscoutDataFileName = System.getProperty("user.dir") +
                 "/pscout_results/results/API_22/allmappings";
@@ -62,27 +62,25 @@ public class PscoutParser {
         }
 
         String line;
-        String permission = null;
+        Permission permission = null;
         String signature;
-        List<String> permissions;
+        List<Permission> permissions;
 
         try {
             while ((line = in.readLine()) != null && !line.isEmpty()) {
                 if (line.startsWith("Permission:")) {
                     // upon reaching a new permission
-                    permission = line.substring(line.indexOf(':') + 1);
+                    String permissionName = line.substring(line.indexOf(':') + 1);
+                    permission = new Permission(permissionName);
                     // discard the next line
                     in.readLine();
                 } else {
                     // the line must be an api signature
                     signature = line.substring(0, line.indexOf('>') + 1);
-                    if (mappings.containsKey(signature)) {
-                        mappings.get(signature).add(permission);
-                    } else {
-                        permissions = new ArrayList<>();
-                        permissions.add(permission);
-                        mappings.put(signature, permissions);
+                    if (!mappings.containsKey(signature)) {
+                        mappings.put(signature, new ArrayList<>());
                     }
+                    mappings.get(signature).add(permission);
                 }
             }
         } catch (IOException e) {
@@ -91,7 +89,7 @@ public class PscoutParser {
 
         // store this hashmap to json file
         Gson gson = new Gson();
-        Type type = new TypeToken<Map<String, List<String>>>(){}.getType();
+        Type type = new TypeToken<Map<String, List<Permission>>>(){}.getType();
         String mappingString = gson.toJson(mappings, type);
 
         try {
@@ -111,15 +109,7 @@ public class PscoutParser {
      *
      * @return a list of strings representing the permissions needed for the given api call.
      */
-    public static List<String> getPermissionMapping(String signature) {
+    public static List<Permission> getPermissionMapping(String signature) {
         return permissionMappings.get(signature);
-    }
-
-    public static void main (String[] args) {
-        permissionMappings = getOrCreatePermissionMappings();
-        for (String key : permissionMappings.keySet()) {
-            System.out.println("api " + key + " requires permissions: ");
-            System.out.println(permissionMappings.get(key));
-        }
     }
 }

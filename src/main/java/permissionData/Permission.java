@@ -3,12 +3,11 @@ package permissionData;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Scanner;
 
 /**
  * Copyright (c) 2018, Zhijun Yin. All rights reserved.
  */
-public class ProtectionLevels {
+public class Permission {
 
     private static final List<String> PROTECTION_NORMAL = new ArrayList<>(Arrays.asList(
             "ACCESS_LOCATION_EXTRA_COMMANDS",
@@ -50,7 +49,7 @@ public class ProtectionLevels {
             "WRITE_SYNC_SETTINGS"
     ));
 
-    private static final ArrayList<String> DANGEROUSE_PERMISSIONS = new ArrayList<>(Arrays.asList(
+    private static final List<String> DANGEROUSE_PERMISSIONS = new ArrayList<>(Arrays.asList(
             "READ_CALENDAR",
             "WRITE_CALENDAR",
             "CAMERA",
@@ -78,5 +77,53 @@ public class ProtectionLevels {
             "READ_EXTERNAL_STORAGE",
             "WRITE_EXTERNAL_STORAGE"
     ));
+
+    private static final List<String> PROTECTION_SIGNATURE = new ArrayList<>(Arrays.asList(
+            "BIND_ACCESSIBILITY_SERVICE",
+            "BIND_AUTOFILL_SERVICE",
+            "BIND_CARRIER_SERVICES",
+            "BIND_CHOOSER_TARGET_SERVICE",
+            "BIND_CONDITION_PROVIDER_SERVICE",
+            "BIND_DEVICE_ADMIN",
+            "BIND_DREAM_SERVICE",
+            "BIND_INCALL_SERVICE",
+            "BIND_INPUT_METHOD",
+            "BIND_MIDI_DEVICE_SERVICE",
+            "BIND_NFC_SERVICE",
+            "BIND_NOTIFICATION_LISTENER_SERVICE",
+            "BIND_PRINT_SERVICE",
+            "BIND_SCREENING_SERVICE",
+            "BIND_TELECOM_CONNECTION_SERVICE",
+            "BIND_TEXT_SERVICE",
+            "BIND_TV_INPUT",
+            "BIND_VISUAL_VOICEMAIL_SERVICE",
+            "BIND_VOICE_INTERACTION",
+            "BIND_VPN_SERVICE",
+            "BIND_VR_LISTENER_SERVICE",
+            "BIND_WALLPAPER",
+            "CLEAR_APP_CACHE",
+            "MANAGE_DOCUMENTS",
+            "READ_VOICEMAIL",
+            "REQUEST_INSTALL_PACKAGES",
+            "SYSTEM_ALERT_WINDOW",
+            "WRITE_SETTINGS",
+            "WRITE_VOICEMAIL"
+    ));
+
+    private String name;
+    private ProtectionLevel level;
+
+    public Permission(String name) {
+        this.name = name;
+        if (PROTECTION_NORMAL.contains(name)) {
+            level = ProtectionLevel.PROTECTION_NORMAL;
+        } else if (DANGEROUSE_PERMISSIONS.contains(name)) {
+            level = ProtectionLevel.DANGEROUSE_PERMISSIONS;
+        } else if (PROTECTION_SIGNATURE.contains(name)) {
+            level = ProtectionLevel.PROTECTION_SIGNATURE;
+        } else {
+            level = ProtectionLevel.SPECIAL;
+        }
+    }
 
 }
