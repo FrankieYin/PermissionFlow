@@ -133,5 +133,7 @@ public class SccSolver {
         SccSolver solver = new SccSolver();
         PermissionFlowGraph graph = solver.getSCCGraph();
         graph.printGraph(solver.infoflowCFG);
+        System.out.println("\n\n");
+        graph.condenseGraph().printGraph(solver.infoflowCFG);
     }
 }

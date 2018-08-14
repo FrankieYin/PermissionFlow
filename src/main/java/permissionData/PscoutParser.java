@@ -15,9 +15,9 @@ public class PscoutParser {
     private static String jsonFileName = System.getProperty("user.dir") +
             "/pscout_results/permissionMappings.json";
 
-    private static Map<String, List<Permission>> permissionMappings = getOrCreatePermissionMappings();
+    private static Map<String, Set<Permission>> permissionMappings = getOrCreatePermissionMappings();
 
-    private static Map<String, List<Permission>> getOrCreatePermissionMappings() {
+    private static Map<String, Set<Permission>> getOrCreatePermissionMappings() {
         BufferedReader in;
         try {
             // read the .json file and load the hashmap
@@ -30,7 +30,7 @@ public class PscoutParser {
         }
         // read the json string and reconstruct a hashmap from json using gson
         Gson gson = new Gson();
-        Type type = new TypeToken<HashMap<String, List<Permission>>>(){}.getType();
+        Type type = new TypeToken<HashMap<String, Set<Permission>>>(){}.getType();
         try {
             String jsonString = in.readLine();
             return gson.fromJson(jsonString, type);
@@ -46,9 +46,9 @@ public class PscoutParser {
      *
      * @return
      */
-    private static Map<String,List<Permission>> createPermissionMappings() {
+    private static Map<String,Set<Permission>> createPermissionMappings() {
 
-        Map<String, List<Permission>> mappings = new HashMap<>();
+        Map<String, Set<Permission>> mappings = new HashMap<>();
 
         String pscoutDataFileName = System.getProperty("user.dir") +
                 "/pscout_results/results/API_22/allmappings";
@@ -64,7 +64,6 @@ public class PscoutParser {
         String line;
         Permission permission = null;
         String signature;
-        List<Permission> permissions;
 
         try {
             while ((line = in.readLine()) != null && !line.isEmpty()) {
@@ -78,7 +77,7 @@ public class PscoutParser {
                     // the line must be an api signature
                     signature = line.substring(0, line.indexOf('>') + 1);
                     if (!mappings.containsKey(signature)) {
-                        mappings.put(signature, new ArrayList<>());
+                        mappings.put(signature, new HashSet<>());
                     }
                     mappings.get(signature).add(permission);
                 }
@@ -89,7 +88,7 @@ public class PscoutParser {
 
         // store this hashmap to json file
         Gson gson = new Gson();
-        Type type = new TypeToken<Map<String, List<Permission>>>(){}.getType();
+        Type type = new TypeToken<Map<String, Set<Permission>>>(){}.getType();
         String mappingString = gson.toJson(mappings, type);
 
         try {
@@ -109,7 +108,7 @@ public class PscoutParser {
      *
      * @return a list of strings representing the permissions needed for the given api call.
      */
-    public static List<Permission> getPermissionMapping(String signature) {
-        return permissionMappings.get(signature);
+    public static Set<Permission> getPermissionMapping(String signature) {
+        return permissionMappings.getOrDefault(signature, new HashSet<>());
     }
 }

@@ -9,26 +9,38 @@ import java.util.*;
 public class PermissionFlowGraph {
 
     private Map<Long, FlowGraphNode> nodes;
-    private Map<Long, List<Long>> edges;
+    private Map<Long, List<Long>> outgoingEdges;
+    private Map<Long, List<Long>> incomingEdges;
+    private Set<FlowGraphNode> entries;
+
+    private boolean condensed;
+    private PermissionFlowGraph condensedGraph;
 
     public PermissionFlowGraph() {
         nodes = new HashMap<>();
-        edges = new HashMap<>();
-    }
-
-    public boolean isEntryNode(FlowGraphNode node) {
-        return false;
+        outgoingEdges = new HashMap<>();
+        incomingEdges = new HashMap<>();
+        entries = new HashSet<>();
+        condensed = false;
     }
 
     public void addNode(FlowGraphNode graphNode) {
         nodes.put(graphNode.getId(), graphNode);
+        entries.add(graphNode);
     }
 
     public void addEdge(long from, long to) {
-        if (!edges.containsKey(from)) {
-            edges.put(from, new ArrayList<>());
+        if (!outgoingEdges.containsKey(from)) {
+            outgoingEdges.put(from, new ArrayList<>());
         }
-        edges.get(from).add(to);
+        outgoingEdges.get(from).add(to);
+
+        if (!incomingEdges.containsKey(to)) {
+            incomingEdges.put(to, new ArrayList<>());
+        }
+        incomingEdges.get(to).add(from);
+
+        entries.remove(nodes.get(to));
     }
 
     public long findNodeByComponent(Unit v) {
@@ -40,16 +52,69 @@ public class PermissionFlowGraph {
         return -1;
     }
 
+    public PermissionFlowGraph condenseGraph() {
+        if (condensed) {
+            return this;
+        }
+
+        condensedGraph = new PermissionFlowGraph();
+
+        for (FlowGraphNode node : entries) {
+            dfs(new FlowGraphNode(), node.getId(), new ArrayList<>());
+        }
+
+        condensed = true;
+        return condensedGraph;
+    }
+
+    private Long dfs(FlowGraphNode container, Long nodeId, List<Long> visited) {
+        // check if nodeId has been visited
+        if (visited.contains(nodeId)) {
+            return container.getId();
+        }
+
+        visited.add(nodeId);
+
+        FlowGraphNode node = nodes.get(nodeId);
+        if (outgoingEdges.getOrDefault(nodeId, new ArrayList<>()).size() <= 1
+                && incomingEdges.getOrDefault(nodeId, new ArrayList<>()).size() <= 1
+                && node.getPermissions().equals(container.getPermissions())) {
+
+            container.merge(node);
+            List<Long> children = outgoingEdges.getOrDefault(nodeId, new ArrayList<>());
+            if (children.size() == 0) {
+                return container.getId();
+            }
+            return dfs(container, children.get(0), visited);
+        }
+
+        condensedGraph.addNode(node);
+        for (Long childNode : outgoingEdges.getOrDefault(nodeId, new ArrayList<>())) {
+            condensedGraph.addEdge(nodeId, dfs(new FlowGraphNode(), childNode, visited));
+        }
+
+        if (!container.isEmpty()) {
+            condensedGraph.addNode(container);
+            condensedGraph.addEdge(container.getId(), nodeId);
+            return container.getId();
+        }
+        return node.getId();
+    }
+
     public int size() {
         return nodes.size();
+    }
+
+    public Set<FlowGraphNode> getEntries() {
+        return entries;
     }
 
     public Map<Long, FlowGraphNode> getNodes() {
         return nodes;
     }
 
-    public Map<Long, List<Long>> getEdges() {
-        return edges;
+    public Map<Long, List<Long>> getOutgoingEdges() {
+        return outgoingEdges;
     }
 
     public void printGraph(InfoflowCFG infoflowCFG) {
@@ -58,8 +123,8 @@ public class PermissionFlowGraph {
             System.out.println(node);
         }
 
-        for (long from : edges.keySet()) {
-            System.out.printf("Edge from node %d to node(s) %s\n", from, edges.get(from));
+        for (long from : outgoingEdges.keySet()) {
+            System.out.printf("Edge from node %d to node(s) %s\n", from, outgoingEdges.get(from));
         }
     }
 }
